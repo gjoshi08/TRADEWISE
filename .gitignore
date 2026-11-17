@@ -1,0 +1,18 @@
+# OS and editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+
+# Logs and local tooling
+*.log
+node_modules/
+.vercel/
+.env
+.env.*
+
+# Never commit research data or datasets
+*.xlsx
+*.csv

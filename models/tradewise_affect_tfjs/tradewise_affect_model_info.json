@@ -1,0 +1,68 @@
+{
+  "model": "TRADEWISE camera affect estimator (Stage A)",
+  "format": "TensorFlow.js graph model (float32). Load with tf.loadGraphModel('model.json').",
+  "input": {
+    "name_hint": "first (only) input",
+    "shape": [
+      null,
+      224,
+      224,
+      3
+    ],
+    "dtype": "float32",
+    "preprocessing": [
+      "face crop from the camera frame (RGB)",
+      "resize to 224x224, bilinear",
+      "x / 127.5 - 1  (range [-1, 1])"
+    ]
+  },
+  "outputs": {
+    "expression": {
+      "shape": [
+        null,
+        8
+      ],
+      "labels": [
+        "neutral",
+        "happiness",
+        "sadness",
+        "surprise",
+        "fear",
+        "disgust",
+        "anger",
+        "contempt"
+      ],
+      "meaning": "temperature-calibrated softmax over displayed facial expression",
+      "disabled_classes": [
+        "contempt"
+      ],
+      "note": "disabled classes are fixed at probability ~0 (no training data)"
+    },
+    "valence_arousal": {
+      "shape": [
+        null,
+        2
+      ],
+      "order": [
+        "valence",
+        "arousal"
+      ],
+      "meaning": "original AffectNet MobileNetV2 regressor (Batic 2020), unchanged",
+      "post_processing": "clip to [-1, 1]; smooth over time",
+      "validated_for_tradewise": false
+    }
+  },
+  "temperature_folded_in": 0.9641526873732874,
+  "active_classes": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    0
+  ],
+  "source_run": "stageA_20261117-112919_rafdb_gap",
+  "caveat": "Outputs estimate what a face displays to a camera; they are not evidence of felt emotion."
+}
