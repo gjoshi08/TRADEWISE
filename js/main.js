@@ -6,6 +6,7 @@ import { ai } from './ai.js';
 import { voice } from './voice.js';
 import { inr, WATCH, STOCKS } from './data.js';
 import { openAIPopover, closePopover, closeDrawer, toast, camStatus, marketStatus, nav, ICON } from './ui.js';
+import { initPreview, setPreview, previewWanted } from './campreview.js';
 import { welcome, onboarding, camera } from './views/onboard.js';
 import { markets } from './views/markets.js';               // 02 — Figma 52:337
 import { marketPsych } from './views/marketpsych.js';       // 03 — Figma 53:544
@@ -70,7 +71,9 @@ document.addEventListener('click', async e => {
     case 'closepop': closePopover(); break;
     case 'cam-on': { const ok = await affect.startCamera(); if (!ok) toast('Camera unavailable: ' + affect.state.error); reopen(); break; }
     case 'cam-demo': affect.startDemo(); reopen(); break;
-    case 'cam-off': affect.stop(); store.s.camera.choice = 'none'; store.save(); store.log('ai', 'Camera turned off. The AI uses trading activity only.'); reopen(); break;
+    case 'cam-off': { const was = affect.state.mode; affect.stop(); store.s.camera.choice = 'none'; store.save(); store.log('ai', 'Camera turned off. The AI uses trading activity only.'); reopen(); if (was === 'camera') toast('Camera off. The camera has been released and live estimates were discarded.'); break; }
+    case 'cam-preview': if (affect.state.mode !== 'camera') break; setPreview(!previewWanted()); reopen(); break;
+    case 'cam-preview-hide': setPreview(false); reopen(); toast('Preview hidden. The camera is still on; turn it off in the camera settings.'); break;
     case 'recal': affect.calibrate(5000); toast('Calibrating for 5 seconds. Look at the screen with a relaxed face.'); closePopover(); break;
     case 'speak': voice.setSpeak(!voice.state.speak); reopen(); toast(voice.state.speak ? 'Important alerts will be read aloud.' : 'Spoken alerts muted.'); break;
   }
@@ -100,10 +103,9 @@ engine.on(() => {
   const m = document.querySelector('[data-live="mstatus"]'); if (m) m.textContent = marketStatus();
 });
 affect.on(updateStatus); ai.on(updateStatus); voice.on(updateStatus);
-// The V2 screens show no webcam preview, but the on-device model needs a playing <video>. Keep it attached to an
-// invisible 2×2 px host whenever no screen (e.g. calibration) is displaying it. Frames are never stored.
-const videoHost = document.createElement('div'); videoHost.id = 'tw-video-host'; videoHost.setAttribute('aria-hidden', 'true'); document.body.appendChild(videoHost);
-affect.on(s => { const v = affect.video; if (v && s.mode === 'camera' && !v.isConnected) { videoHost.appendChild(v); v.play().catch(() => { }); } });
+// The on-device model needs a playing <video>. campreview.js keeps that single element in an invisible host, or in the
+// optional camera preview when the user turns it on (same stream, no second camera). Frames are never stored.
+initPreview();
 // Restore the user's earlier choice of demonstration mode (the camera needs fresh permission each visit).
 if (store.s.camera.choice === 'demo') affect.startDemo();
 window.addEventListener('hashchange', route);

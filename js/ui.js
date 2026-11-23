@@ -4,6 +4,7 @@ import { engine } from './engine.js';
 import { affect, PRESETS } from './affect.js';
 import { ai } from './ai.js';
 import { voice } from './voice.js';
+import { previewWanted } from './campreview.js';
 import { WATCH, STOCKS, INDICES, esc, clamp, fmt, pct, cls } from './data.js';
 
 export const $ = (s, r = document) => r.querySelector(s);
@@ -92,21 +93,30 @@ export const pageTitle = (title, sub = '', right = '', crumb = '') => `<div clas
 
 let pop = null;
 export function closePopover() { if (pop) { pop.remove(); pop = null; } }
+const camState = s => {
+  const [c, t] = ({ camera: ['live', 'On · this device'], loading: ['paused', 'Starting…'], demo: ['attn', 'Off · demonstration mode'], error: ['attn', 'Off · unavailable'] })[s.mode] || ['', 'Off'];
+  return `<span class="status ${c}" data-live="camstate"><span class="d"></span>${t}</span>`;
+};
 export function openAIPopover() {
   closePopover(); const s = affect.state, vs = voice.state;
   pop = document.createElement('div'); pop.className = 'popover'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-label', 'Camera and AI observer');
   pop.innerHTML = `<div class="row between"><b class="t-sub">Camera and AI observer</b><button class="btn ghost sm" data-act="closepop" aria-label="Close">${ICON.x}</button></div>
   <p class="small ink2">The AI observes your trading and the market. The camera is optional and only shapes wording; it never triggers input.</p>
+  <div class="row between camrow"><span class="small">Camera</span>${camState(s)}</div>
   <div class="col" style="gap:8px">
    <button class="option ${s.mode === 'camera' ? 'on' : ''}" data-act="cam-on"><span class="radio"></span><span><b>Camera on</b><span class="d">Live estimate on this device. Nothing is recorded or stored.</span></span></button>
    <button class="option ${s.mode === 'demo' ? 'on' : ''}" data-act="cam-demo"><span class="radio"></span><span><b>Demonstration mode</b><span class="d">No camera. Simulated values, labelled as simulated.</span></span></button>
    <button class="option ${s.mode === 'off' || s.mode === 'error' ? 'on' : ''}" data-act="cam-off"><span class="radio"></span><span><b>Camera off</b><span class="d">Trading activity and market context only.</span></span></button>
   </div>
+  <div class="prevrow"><div class="row between"><span class="small" id="pv-l">Show camera preview</span><button class="toggle ${s.mode === 'camera' && previewWanted() ? 'on' : ''}" role="switch" aria-checked="${s.mode === 'camera' && previewWanted()}" aria-labelledby="pv-l" aria-describedby="pv-d" data-act="cam-preview" ${s.mode === 'camera' ? '' : 'disabled'}></button></div>
+   <p class="t-meta mute" id="pv-d">${s.mode === 'camera' ? 'Shows or hides the picture only. The camera stays on until you choose Camera off.' : 'Available when the camera is on.'}</p></div>
   ${s.mode === 'camera' ? `<button class="btn sm" data-act="recal">${s.calibrating != null ? 'Calibrating… keep a relaxed face' : s.calibrated ? 'Recalibrate baseline (5 s)' : 'Calibrate baseline (5 s)'}</button>` : ''}
   ${s.mode === 'error' ? `<div class="callout plan">${esc(s.error)} You can use demonstration mode instead.</div>` : ''}
   ${s.mode === 'demo' ? `<div class="field"><label for="preset">Simulated affect</label><select id="preset" class="input" data-act="preset">${Object.entries(PRESETS).map(([k, p]) => `<option value="${k}" ${s.preset === k ? 'selected' : ''}>${p.label}</option>`).join('')}</select></div>
   <label class="row small"><input type="checkbox" data-act="lookaway" ${s.lookAway ? 'checked' : ''}> Simulate looking away from the screen</label>` : ''}
   <div class="row between"><span class="small">Read important alerts aloud${vs.canSpeak ? '' : ' <span class="mute">(not supported here)</span>'}</span><button class="toggle ${vs.speak ? 'on' : ''}" role="switch" aria-checked="${vs.speak}" aria-label="Read important alerts aloud" data-act="speak"></button></div>
+  <div class="camnotes"><p class="t-meta mute">Your camera is processed on this device. Video is never recorded or uploaded.</p>
+   <p class="t-meta mute">Facial-expression estimates are uncertain and do not represent a confirmed emotional state.</p></div>
   <a href="#profile" class="btn sm" data-act="closepop">Privacy and camera settings</a>`;
   document.body.appendChild(pop);
 }
